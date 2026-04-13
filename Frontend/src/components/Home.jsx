@@ -36,7 +36,7 @@ const Home = () => {
         <img src="../../public/fslogov1.png" alt="" className="logo" />
         <br /><br /><br />
         <h1 className="title">
-          <span className="highlight">FLOW</span>speak
+          <span className="highlight">SPEAK</span>EASE
         </h1>
         <h2 className="subtitle">Personalized Stutter Detection and Helper Model</h2>
         
@@ -60,7 +60,7 @@ const Home = () => {
           transition={{ duration: 0.5 }}
           viewport={{ once: true }}
         >
-          How FLOWspeak Works
+          How SPEAKEASE Works
         </motion.h2>
         
         <div className="workflow-steps">
@@ -96,7 +96,7 @@ const Home = () => {
         >
           <h2>Our Mission</h2>
           <p>
-            FLOWspeak was created to democratize speech therapy and support for those with speech disfluencies. Many people 
+            SPEAKEASE was created to democratize speech therapy and support for those with speech disfluencies. Many people 
             around the world wish to develop their speech skills but lack access to professional help due to geographical, 
             financial, or social barriers.
           </p>
@@ -111,7 +111,7 @@ const Home = () => {
             whileTap={{ scale: 0.95 }}
             onClick={() => window.location.href = '/stutter-help'}
           >
-            Try FLOWspeak Now
+            Try SpeakEase Now
           </motion.button>
         </motion.div>
       </section>
@@ -122,17 +122,17 @@ const Home = () => {
           <div className="form-description">
             <h3>We'd Love to Hear From You</h3>
             <p>
-              Have questions, suggestions, or feedback about FLOWspeak? 
+              Have questions, suggestions, or feedback about SPEAKEASE? 
               We're constantly improving our platform based on user insights.
             </p>
             <div className="contact-info">
               <div className="contact-item">
                 <span className="contact-icon">📧</span>
-                <span>support@flowspeak.ai</span>
+                <span>support@speakease.ai</span>
               </div>
               <div className="contact-item">
                 <span className="contact-icon">🌐</span>
-                <span>www.flowspeak.ai</span>
+                <span>www.speakease.ai</span>
               </div>
             </div>
           </div>

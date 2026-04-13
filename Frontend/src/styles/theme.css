@@ -1,0 +1,58 @@
+/* theme.css - SpeakEase Global Theme */
+
+/* Import fonts */
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  /* Brand Colors */
+  --primary-color: #2563eb;       /* Calm blue */
+  --primary-light: #3b82f6;       /* Lighter blue */
+  --primary-dark: #1e40af;        /* Darker blue */
+  --secondary-color: #14b8a6;     /* Teal */
+  --accent-color: #facc15;        /* Warm yellow */
+
+  /* Text & Background */
+  --text-color: #1f2937;          /* Dark gray */
+  --text-light: #6b7280;          /* Muted gray */
+  --bg-color: #f9fafb;            /* Light background */
+
+  /* Fonts */
+  --font-heading: 'Nunito Sans', sans-serif;
+  --font-body: 'Inter', sans-serif;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 10px rgba(0,0,0,0.1);
+  --shadow-lg: 0 6px 20px rgba(0,0,0,0.15);
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+}
+
+/* Global Styles */
+body {
+  font-family: var(--font-body);
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  margin: 0;
+  padding: 0;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+  color: var(--primary-color);
+  margin: 0;
+}
+
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button:focus {
+  outline: 3px solid var(--accent-color);
+  outline-offset: 2px;
+}

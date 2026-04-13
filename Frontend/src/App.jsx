@@ -12,7 +12,7 @@ const App = () => {
       <div className="app">
         <nav className="navbar">
           <div className="logo2">
-            <Link to="/">FLOW<span>speak</span>      <img src="../../public/fslogov1.png" alt="" className="logo1" /></Link>
+            <Link to="/">SPEAK<span>EASE</span>      <img src="../../public/fslogov1.png" alt="" className="logo1" /></Link>
           </div>
           <div className="nav-links">
             <Link to="/" className="nav-link">Home</Link>
@@ -29,7 +29,7 @@ const App = () => {
           </Routes>
         </main>
         <footer className="footer">
-        <p>&copy; {new Date().getFullYear()} FLOWspeak - All Rights Reserved</p>
+        <p>&copy; {new Date().getFullYear()} SPEAKEASE - All Rights Reserved</p>
       </footer>
       </div>
     </Router>
