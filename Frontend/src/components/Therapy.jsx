@@ -1,14 +1,42 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './Therapy.css';
 
+// 🔧 CONFIGURATION CONSTANTS
+const CONFIG = {
+  PROCESSING_DEBOUNCE_MS: 50,
+  MIN_WORD_LENGTH: 3,
+  MIN_AUTO_HIGHLIGHT_SPEED: 50,
+  MAX_AUTO_HIGHLIGHT_SPEED: 500,
+  DEFAULT_AUTO_HIGHLIGHT_SPEED: 150,
+  SAMPLE_SIZE_FOR_WAVES: 32,
+  CANVAS_WIDTH: 80,
+  CANVAS_HEIGHT: 80,
+  WAVES_CANVAS_HEIGHT: 150,
+  FFT_SIZE: 256,
+  LAST_WORDS_COUNT: 5,
+  COMBINATIONS_FOR_STATS: 10
+};
+
 const Therapy = () => {
+  // 📊 STATE: Recording & Playback
   const [isRecording, setIsRecording] = useState(false);
   const [highlightPosition, setHighlightPosition] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [totalTime, setTotalTime] = useState(0);
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
-  const [autoHighlightSpeed, setAutoHighlightSpeed] = useState(150); // Characters per minute
+  const [autoHighlightSpeed, setAutoHighlightSpeed] = useState(CONFIG.DEFAULT_AUTO_HIGHLIGHT_SPEED);
   const [isAutoHighlighting, setIsAutoHighlighting] = useState(false);
+  
+  // 📊 STATE: Accuracy & Fluency Tracking
+  const [sessionStats, setSessionStats] = useState({
+    totalWordsSpoken: 0,
+    correctWordsMatched: 0,
+    totalTime: 0,
+    accuracy: 0,
+    wordsPerMinute: 0
+  });
+  const [fluencyScore, setFluencyScore] = useState(0);
+  const [lastError, setLastError] = useState(null);
   const [currentText, setCurrentText] = useState(
     "It was a bright, sunny morning when Jack and his family decided to visit the zoo. Jack had been looking forward to this day for weeks. He loved animals and was excited to see them up close. His mom packed a picnic lunch, and they all got into the car to drive to the zoo. When they arrived, Jack could see many people already walking around. The zoo was full of families, children, and even some school groups. The first stop was the lion exhibit. Jack could hear the lions roaring from a distance. As they got closer, he saw the large, powerful animals resting in the shade. He was amazed at how big they were. Next, they went to see the monkeys. The monkeys were jumping from tree to tree and making funny noises. Jack laughed as he watched them swing around so easily. His little sister, Emma, pointed at the baby monkey and said it was the cutest thing she had ever seen. After the monkeys, Jack and his family walked to the elephant enclosure. The elephants were eating leaves and using their trunks to grab food. Jack was fascinated by how long their trunks were and how gently they ate. He thought the elephants looked very wise. Later, they visited the penguin exhibit. The penguins were swimming in the water and waddling on the ground. Jack liked how fast they could swim, and he watched them slide on their bellies with excitement. At the end of the day, Jack and his family sat on a bench and ate their lunch. They talked about their favorite animals. Jack couldn’t wait to tell his friends about his visit to the zoo."
   );
@@ -25,13 +53,14 @@ const Therapy = () => {
   const animationFrameRef = useRef(null);
   const autoHighlightTimerRef = useRef(null);
   
-  // Performance optimization refs
+  // 📊 Performance optimization & tracking refs
   const lastRecognizedIndexRef = useRef(0);
   const currentTranscriptRef = useRef('');
   const processingTimeoutRef = useRef(null);
   const textLowerCaseRef = useRef(currentText.toLowerCase());
   const wordsArrayRef = useRef(currentText.toLowerCase().split(/\s+/));
-
+  const matchedWordsRef = useRef(new Set()); // Track matched words for accuracy
+  const sessionStartTimeRef = useRef(null);  const lastMatchedWordIndexRef = useRef(-1); // Track the last word index (word-based, not character-based)
   // Precompute text data on init or when text changes
   useEffect(() => {
     textLowerCaseRef.current = currentText.toLowerCase();
@@ -46,12 +75,12 @@ const Therapy = () => {
     const wavesCanvas = wavesCanvasRef.current;
     
     // Main circular visualizer
-    canvas.width = 80;
-    canvas.height = 80;
+    canvas.width = CONFIG.CANVAS_WIDTH;
+    canvas.height = CONFIG.CANVAS_HEIGHT;
     
     // Background waves
     wavesCanvas.width = window.innerWidth;
-    wavesCanvas.height = 150;
+    wavesCanvas.height = CONFIG.WAVES_CANVAS_HEIGHT;
   }, []);
 
   // Initialize speech recognition and audio visualization
@@ -171,14 +200,11 @@ const Therapy = () => {
       const transcript = event.results[i][0].transcript;
       if (event.results[i].isFinal) {
         finalTranscript += ' ' + transcript;
+        console.log('🎤 Final transcript:', transcript);
         // Process final results immediately for better responsiveness
         processTranscript(finalTranscript);
       } else {
         interimTranscript += transcript;
-        // Process interim results with a very short delay to reduce processing load
-        processingTimeoutRef.current = setTimeout(() => {
-          processTranscript(finalTranscript + ' ' + interimTranscript);
-        }, 50);
       }
     }
     
@@ -193,7 +219,7 @@ const Therapy = () => {
     const words = cleanTranscript.split(/\s+/);
     
     // Fast processing - use the last few words
-    const lastFewWordsCount = Math.min(5, words.length);
+    const lastFewWordsCount = Math.min(CONFIG.LAST_WORDS_COUNT, words.length);
     const startIndex = Math.max(0, words.length - lastFewWordsCount);
     const lastFewWords = words.slice(startIndex);
     
@@ -201,53 +227,126 @@ const Therapy = () => {
     findAndHighlightMatch(lastFewWords);
   };
 
-  // Optimized matching algorithm
+  // Optimized matching algorithm with accuracy tracking - WORD-BASED
   const findAndHighlightMatch = (searchWords) => {
     if (!searchWords || searchWords.length === 0) return;
     
-    const textLower = textLowerCaseRef.current;
     const allWords = wordsArrayRef.current;
-    
-    // Start searching from the last recognized position
-    const startPosition = Math.max(0, lastRecognizedIndexRef.current);
-    
-    // Try to find exact matches for the last spoken word
     const lastWord = searchWords[searchWords.length - 1];
     
-    // Skip very short words (less likely to be unique)
-    if (lastWord && lastWord.length >= 3) {
-      // Look for the word after our current position
-      let wordIndex = -1;
-      let bestMatchPos = -1;
+    // Skip very short words (noise or non-meaningful content)
+    if (!lastWord || lastWord.length < CONFIG.MIN_WORD_LENGTH) return;
+    
+    // Start searching from the last matched word position
+    const startSearchIndex = Math.max(0, lastMatchedWordIndexRef.current + 1);
+    
+    console.log(`🔍 Looking for word: "${lastWord}", starting from index: ${startSearchIndex}`);
+    
+    // Find the next occurrence of this word in the text
+    for (let i = startSearchIndex; i < allWords.length; i++) {
+      const textWord = allWords[i];
       
-      // Find all occurrences of the word
-      let searchPos = startPosition;
-      while ((searchPos = textLower.indexOf(lastWord, searchPos)) !== -1) {
-        // Check if this is a full word match (not part of another word)
-        const isWordBoundaryBefore = searchPos === 0 || !textLower[searchPos - 1].match(/[a-z0-9]/i);
-        const isWordBoundaryAfter = searchPos + lastWord.length >= textLower.length || 
-                                     !textLower[searchPos + lastWord.length].match(/[a-z0-9]/i);
-                                     
-        if (isWordBoundaryBefore && isWordBoundaryAfter) {
-          // This is a legitimate word boundary match
-          if (searchPos > startPosition) {
-            bestMatchPos = searchPos + lastWord.length;
-            break; // Take the first match after our current position
-          }
+      // Check for exact word match (case-insensitive, with punctuation handling)
+      const cleanTextWord = textWord.replace(/[.,!?;:\-]/g, '').toLowerCase();
+      const cleanSpokenWord = lastWord.replace(/[.,!?;:\-]/g, '').toLowerCase();
+      
+      if (cleanTextWord === cleanSpokenWord && cleanTextWord.length >= CONFIG.MIN_WORD_LENGTH) {
+        console.log(`✅ Matched word at index ${i}: "${textWord}"`);
+        
+        // Update last matched word index
+        lastMatchedWordIndexRef.current = i;
+        matchedWordsRef.current.add(lastWord);
+        
+        // Calculate character position up to and including this word
+        let charPosition = 0;
+        for (let j = 0; j <= i; j++) {
+          charPosition += allWords[j].length + 1; // +1 for space
         }
-        searchPos += lastWord.length;
-      }
-      
-      // If we found a match
-      if (bestMatchPos !== -1) {
-        lastRecognizedIndexRef.current = bestMatchPos;
-        setHighlightPosition(bestMatchPos);
-        scrollToHighlight(bestMatchPos);
+        
+        setHighlightPosition(charPosition);
+        scrollToHighlight(charPosition);
+        updateFluencyScore(charPosition);
+        
+        return; // Stop after finding first match
       }
     }
+    
+    console.log(`❌ No match found for "${lastWord}"`);
   };
   
-  // Faster scroll implementation
+  // 📊 NEW: Calculate fluency score based on progress
+  const updateFluencyScore = useCallback((currentPosition) => {
+    const progress = currentPosition / currentText.length;
+    const score = Math.min(progress, 1); // Cap at 1.0
+    setFluencyScore(score);
+    
+    // Calculate words per minute if we have time data
+    if (currentTime > 0) {
+      const minutesElapsed = currentTime / 60;
+      const wordsSpoken = matchedWordsRef.current.size;
+      const wpm = Math.round(wordsSpoken / minutesElapsed);
+      
+      setSessionStats(prev => ({
+        ...prev,
+        wordsPerMinute: wpm,
+        accuracy: matchedWordsRef.current.size > 0 ? 
+          Math.round((matchedWordsRef.current.size / wordsArrayRef.current.length) * 100) : 0
+      }));
+    }
+  }, [currentTime, currentText]);
+  
+  // 📊 NEW: Calculate and display session statistics
+  const getSessionStats = useCallback(() => {
+    const accuracy = matchedWordsRef.current.size > 0 ? 
+      Math.round((matchedWordsRef.current.size / wordsArrayRef.current.length) * 100) : 0;
+    const progress = Math.round((highlightPosition / currentText.length) * 100);
+    
+    return {
+      accuracy,
+      progress,
+      wordsMatched: matchedWordsRef.current.size,
+      totalWords: wordsArrayRef.current.length,
+      wpm: sessionStats.wordsPerMinute
+    };
+  }, [highlightPosition, currentText, sessionStats]);
+  
+  // 📊 NEW: Handle speech recognition error with recovery
+  const handleSpeechError = useCallback((error) => {
+    console.error('🚨 Speech recognition error:', error);
+    setLastError(error);
+    
+    // Auto-recovery attempts
+    if (error === 'network' || error === 'audio-capture') {
+      console.log('🔄 Attempting recovery from', error);
+      setTimeout(() => {
+        if (recognitionRef.current && isRecording) {
+          recognitionRef.current.stop();
+          setTimeout(() => {
+            if (recognitionRef.current && isRecording) {
+              recognitionRef.current.start();
+            }
+          }, 500);
+        }
+      }, 1000);
+    }
+  }, [isRecording]);
+  
+  // 📊 NEW: Reset session stats
+  const resetSessionStats = useCallback(() => {
+    matchedWordsRef.current.clear();
+    lastMatchedWordIndexRef.current = -1; // Reset word index
+    lastRecognizedIndexRef.current = 0;
+    sessionStartTimeRef.current = Date.now();
+    setSessionStats({
+      totalWordsSpoken: 0,
+      correctWordsMatched: 0,
+      totalTime: 0,
+      accuracy: 0,
+      wordsPerMinute: 0
+    });
+    setFluencyScore(0);
+    setLastError(null);
+  }, []);
   const scrollToHighlight = (position) => {
     if (!textContainerRef.current) return;
     
@@ -274,12 +373,14 @@ const Therapy = () => {
     
     if (!isRecording) {
       try {
-        // Reset position when starting a new recording
+        // Reset position and stats when starting a new recording
         setHighlightPosition(0);
         lastRecognizedIndexRef.current = 0;
+        lastMatchedWordIndexRef.current = -1; // Reset word index
         currentTranscriptRef.current = '';
         setCurrentTime(0);
         setTotalTime(0);
+        resetSessionStats();
         
         // Start timer
         let seconds = 0;
@@ -302,7 +403,7 @@ const Therapy = () => {
         // Setup audio context
         audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
         analyserRef.current = audioContextRef.current.createAnalyser();
-        analyserRef.current.fftSize = 256;
+        analyserRef.current.fftSize = CONFIG.FFT_SIZE;
         
         const source = audioContextRef.current.createMediaStreamSource(stream);
         source.connect(analyserRef.current);
@@ -316,8 +417,10 @@ const Therapy = () => {
         }
         
         setIsRecording(true);
+        console.log('🎤 Recording started');
       } catch (error) {
-        console.error('Error accessing microphone:', error);
+        console.error('❌ Error accessing microphone:', error);
+        setLastError('Microphone access denied');
         alert('Please allow microphone access to use this feature.');
       }
     } else {
@@ -362,7 +465,7 @@ const Therapy = () => {
 
   const changeAutoHighlightSpeed = (change) => {
     setAutoHighlightSpeed(prev => {
-      const newSpeed = Math.max(50, Math.min(500, prev + change));
+      const newSpeed = Math.max(CONFIG.MIN_AUTO_HIGHLIGHT_SPEED, Math.min(CONFIG.MAX_AUTO_HIGHLIGHT_SPEED, prev + change));
       return newSpeed;
     });
   };
@@ -437,7 +540,7 @@ const Therapy = () => {
       
       // Calculate average of frequency data for amplitude (optimized)
       let sum = 0;
-      const sampleSize = Math.min(dataArray.length, 32); // Sample fewer data points for performance
+      const sampleSize = Math.min(dataArray.length, CONFIG.SAMPLE_SIZE_FOR_WAVES); // Sample fewer data points for performance
       for (let i = 0; i < sampleSize; i++) {
         sum += dataArray[i * Math.floor(dataArray.length / sampleSize)];
       }
@@ -531,7 +634,7 @@ const Therapy = () => {
           <button 
             className="speed-btn" 
             onClick={() => changeAutoHighlightSpeed(-25)}
-            disabled={autoHighlightSpeed <= 50}
+            disabled={autoHighlightSpeed <= CONFIG.MIN_AUTO_HIGHLIGHT_SPEED}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M19 12H5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -546,7 +649,7 @@ const Therapy = () => {
           <button 
             className="speed-btn" 
             onClick={() => changeAutoHighlightSpeed(25)}
-            disabled={autoHighlightSpeed >= 500}
+            disabled={autoHighlightSpeed >= CONFIG.MAX_AUTO_HIGHLIGHT_SPEED}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 5V19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -588,6 +691,61 @@ const Therapy = () => {
           </button>
         </div>
       </div>
+      
+      {/* 📊 NEW: Progress & Fluency Display */}
+      {isRecording && (
+        <div className="stats-container">
+          <div className="progress-section">
+            <h3>Reading Progress</h3>
+            <div className="progress-bar">
+              <div 
+                className="progress-fill" 
+                style={{ width: `${getSessionStats().progress}%` }}
+              />
+            </div>
+            <div className="progress-text">
+              {getSessionStats().progress}% complete | {getSessionStats().wordsMatched}/{getSessionStats().totalWords} words matched
+            </div>
+          </div>
+          
+          <div className="fluency-section">
+            <h3>Fluency Score</h3>
+            <div className="fluency-score-display">
+              <div className="score-percentage">{Math.round(fluencyScore * 100)}%</div>
+              <div className="score-bar">
+                <div 
+                  className="score-fill" 
+                  style={{ 
+                    width: `${fluencyScore * 100}%`,
+                    background: fluencyScore > 0.7 ? '#22c55e' : fluencyScore > 0.4 ? '#f97316' : '#ef4444'
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div className="stats-grid">
+            <div className="stat-item">
+              <span className="stat-label">Accuracy</span>
+              <span className="stat-value">{getSessionStats().accuracy}%</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">WPM</span>
+              <span className="stat-value">{getSessionStats().wpm}</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">Time</span>
+              <span className="stat-value">{formatTime(currentTime)}</span>
+            </div>
+          </div>
+          
+          {lastError && (
+            <div className="error-message">
+              ⚠️ {lastError}
+            </div>
+          )}
+        </div>
+      )}
       
       {/* Add CSS for new controls */}
       <style>{`
@@ -660,6 +818,127 @@ const Therapy = () => {
         
         .auto-highlight-btn.active:hover {
           background: #dc2626;
+        }
+        
+        /* 📊 NEW: Stats & Progress Styles */
+        .stats-container {
+          max-width: 600px;
+          margin: 20px auto;
+          background: linear-gradient(135deg, #f0f4ff 0%, #e6eeff 100%);
+          border-radius: 12px;
+          padding: 20px;
+          border-left: 4px solid #7c3aed;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        .progress-section {
+          margin-bottom: 20px;
+        }
+        
+        .progress-section h3,
+        .fluency-section h3 {
+          font-size: 0.95rem;
+          color: #7c3aed;
+          margin-bottom: 8px;
+          font-weight: 600;
+        }
+        
+        .progress-bar {
+          height: 8px;
+          background: #e5e7eb;
+          border-radius: 4px;
+          overflow: hidden;
+          margin-bottom: 8px;
+        }
+        
+        .progress-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #7c3aed, #4f46e5);
+          border-radius: 4px;
+          transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+          font-size: 0.85rem;
+          color: #666;
+          text-align: center;
+        }
+        
+        .fluency-section {
+          margin-bottom: 20px;
+        }
+        
+        .fluency-score-display {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        
+        .score-percentage {
+          font-size: 2rem;
+          font-weight: 700;
+          color: #7c3aed;
+          min-width: 60px;
+        }
+        
+        .score-bar {
+          flex: 1;
+          height: 12px;
+          background: #e5e7eb;
+          border-radius: 6px;
+          overflow: hidden;
+        }
+        
+        .score-fill {
+          height: 100%;
+          border-radius: 6px;
+          transition: all 0.3s ease;
+        }
+        
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+          margin-top: 16px;
+        }
+        
+        .stat-item {
+          background: white;
+          padding: 12px;
+          border-radius: 8px;
+          text-align: center;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .stat-label {
+          display: block;
+          font-size: 0.8rem;
+          color: #999;
+          text-transform: uppercase;
+          margin-bottom: 4px;
+        }
+        
+        .stat-value {
+          display: block;
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #7c3aed;
+        }
+        
+        .error-message {
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          color: #dc2626;
+          padding: 10px;
+          border-radius: 6px;
+          margin-top: 12px;
+          font-size: 0.9rem;
+        }
+        
+        @media (max-width: 600px) {
+          .stats-grid {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
     </div>

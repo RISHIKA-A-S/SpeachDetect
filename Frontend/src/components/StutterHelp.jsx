@@ -16,6 +16,8 @@ const StutterHelp = () => {
   // New state for detected stutter type
   const [stutterType, setStutterType] = useState('');
   const [stutterDetails, setStutterDetails] = useState('');
+  // New state for fluency score
+  const [fluencyScore, setFluencyScore] = useState(0);
   
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
@@ -140,6 +142,7 @@ const StutterHelp = () => {
   const sendToBackend = async (text) => {
     // Fetch corrected text from the backend
     try {
+      console.log('📤 Sending to backend:', text);
       const response = await fetch('http://localhost:5500/api/process-speech', {
         method: 'POST',
         headers: {
@@ -148,13 +151,41 @@ const StutterHelp = () => {
         body: JSON.stringify({ speech: text }),
       });
       
-      if (response.ok) {
-        const data = await response.json();
+      console.log('📡 Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Backend error response:', response.status, errorText);
+        return;
+      }
+      
+      const data = await response.json();
+      console.log('✅ Backend response:', data);
+      
+      if (data.top1_words) {
         setSuggestions(data.top1_words);
+        console.log('🎯 Suggestions set:', data.top1_words);
+      }
+      
+      if (data.combinations) {
         setCombinations(data.combinations);
+        console.log('🔗 Combinations set:', data.combinations);
+      }
+      
+      if (data.fluency_score !== undefined) {
+        setFluencyScore(data.fluency_score);
+        console.log('📊 Fluency score set:', data.fluency_score);
+      }
+      
+      if (data.stutter_types && data.stutter_types[0] !== 'None') {
+        setStutterType(data.stutter_types.join(", "));
+        console.log('🗣️ Stutter types:', data.stutter_types);
+      } else {
+        setStutterType('');
+        console.log('✅ No stutters detected - Normal speech');
       }
     } catch (error) {
-      console.error('Error sending to backend:', error);
+      console.error('❌ Error sending to backend:', error);
     }
   };
 
@@ -422,7 +453,18 @@ const StutterHelp = () => {
             )}
           </div>
           
-          {/* New stutter type display section */}
+          {/* Fluency Score Display */}
+          {fluencyScore > 0 && (
+            <div className="fluency-box">
+              <h4>Fluency Score</h4>
+              <div className="fluency-percentage">{Math.round(fluencyScore * 100)}%</div>
+              <div className="fluency-bar">
+                <div className="fluency-fill" style={{ width: `${fluencyScore * 100}%` }} />
+              </div>
+            </div>
+          )}
+          
+          {/* Stutter type display - Only show if stutters are detected */}
           {stutterType && (
             <div className="stutter-type-box">
               <h4>Detected Stutter Type:</h4>
