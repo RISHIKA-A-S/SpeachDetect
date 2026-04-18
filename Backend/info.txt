@@ -1,0 +1,26 @@
+backend/
+├─ controllers/
+│  └─ authController.js
+├─ middlewares/
+│  └─ authMiddleware.js
+├─ models/
+│  └─ User.js
+├─ routes/
+│  └─ authRoutes.js
+├─ uploads/           # optional for images
+├─ config/
+│  └─ db.js
+├─ .env
+├─ server.js
+├─ package.json
+
+
+
+
+{
+  "_id": "68bfe0fef7f15086c2594552",
+  "name": "Admin User",
+  "email": "admin@example.com",
+  "role": "admin",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4YmZlMGZlZjdmMTUwODZjMjU5NDU1MiIsImlhdCI6MTc1NzQwNTQ0MCwiZXhwIjoxNzU4MDEwMjQwfQ.rSQBIbiQOX9p3O4rSRCdVQFcbKdKyJ5bJ6LVtnmjRLQ"
+}

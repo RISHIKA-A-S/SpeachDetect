@@ -1,0 +1,75 @@
+/* Container centers the form */
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f3f3f3;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* Form styling */
+.auth-form {
+  background-color: #fff;
+  padding: 30px 25px;
+  border-radius: 8px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 400px;
+  box-sizing: border-box;
+}
+
+.auth-form h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* Inputs */
+.auth-form input {
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-sizing: border-box;
+}
+
+/* Buttons */
+.auth-form button {
+  width: 100%;
+  padding: 10px;
+  background-color: #007bff;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.auth-form button:hover {
+  background-color: #0056b3;
+}
+
+/* Error messages */
+.auth-error {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 8px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+/* Switch link */
+.auth-switch {
+  text-align: center;
+  font-size: 14px;
+  color: #555;
+  cursor: pointer;
+}
+
+.auth-switch span {
+  color: #007bff;
+  font-weight: bold;
+}
