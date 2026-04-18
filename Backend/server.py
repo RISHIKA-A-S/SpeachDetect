@@ -1,32 +1,23 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient, errors
-import bcrypt
 import jwt
 import datetime
-import re
-from transformers import pipeline
-from dotenv import load_dotenv
+import bcrypt
 import os
 
-# Load environment variables
-load_dotenv()
-
 app = Flask(__name__)
-CORS(app,
-     resources={r"/api/*": {"origins": "http://localhost:5173"}},
-     supports_credentials=True,
-     allow_headers=["Content-Type", "Authorization"],
-     methods=["GET", "POST", "OPTIONS"])
+CORS(app)
 
-# Secret key for JWT
-app.config['SECRET_KEY'] = os.getenv("JWT_SECRET", "fallback_secret")
+app.config["SECRET_KEY"] = "yoursecretkey"
 
-# MongoDB connection with checkpoint
-mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
+# ---------------- MongoDB Connection ----------------
+mongo_uri = os.getenv("MONGO_URI", "your-mongodb-uri")
+
 try:
     client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
-    client.admin.command("ping")  # Connection check
+    # Force a connection check
+    client.admin.command("ping")
     print("✅ MongoDB connection successful")
 except errors.ServerSelectionTimeoutError as err:
     print("❌ MongoDB connection failed:", err)
@@ -35,11 +26,32 @@ except errors.ServerSelectionTimeoutError as err:
 
 db = client["speech_app"]
 users_collection = db["users"]
+results_collection = db["results"]
 
-# Load BERT model once
-pipe = pipeline("fill-mask", model="./local_bert", tokenizer="./local_bert")
+# ---------------- Token Decorator ----------------
+def token_required(f):
+    def wrapper(*args, **kwargs):
+        token = request.headers.get("Authorization")
+        if not token:
+            return jsonify({"error": "Token missing"}), 401
 
-# ---------------- AUTH ROUTES ---------------- #
+        # Allow "Bearer <token>" or raw token
+        if token.startswith("Bearer "):
+            token = token.split(" ")[1]
+
+        try:
+            decoded = jwt.decode(token, app.config["SECRET_KEY"], algorithms=["HS256"])
+            request.user = decoded["email"]
+        except jwt.ExpiredSignatureError:
+            return jsonify({"error": "Token expired"}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({"error": "Invalid token"}), 401
+
+        return f(*args, **kwargs)
+    wrapper.__name__ = f.__name__
+    return wrapper
+
+# ---------------- Signup ----------------
 @app.route("/api/signup", methods=["POST"])
 def signup():
     data = request.get_json()
@@ -47,22 +59,15 @@ def signup():
     email = data.get("email")
     password = data.get("password")
 
-    if not email or not password:
-        return jsonify({"error": "Email and password required"}), 400
-
     if users_collection.find_one({"email": email}):
         return jsonify({"error": "User already exists"}), 400
 
     hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
-    users_collection.insert_one({
-        "name": name,
-        "email": email,
-        "password": hashed_pw
-    })
+    users_collection.insert_one({"name": name, "email": email, "password": hashed_pw})
 
     return jsonify({"message": "Signup successful"}), 201
 
-
+# ---------------- Login ----------------
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.get_json()
@@ -78,77 +83,50 @@ def login():
         app.config["SECRET_KEY"],
         algorithm="HS256"
     )
-
     return jsonify({"token": token})
 
-
-# ---------------- JWT PROTECTION ---------------- #
-def token_required(f):
-    def wrapper(*args, **kwargs):
-        token = request.headers.get("Authorization")
-        if not token:
-            return jsonify({"error": "Token missing"}), 401
-        try:
-            decoded = jwt.decode(token, app.config["SECRET_KEY"], algorithms=["HS256"])
-            request.user = decoded["email"]
-        except jwt.ExpiredSignatureError:
-            return jsonify({"error": "Token expired"}), 401
-        except jwt.InvalidTokenError:
-            return jsonify({"error": "Invalid token"}), 401
-        return f(*args, **kwargs)
-    wrapper.__name__ = f.__name__
-    return wrapper
-
-
-# ---------------- SPEECH PROCESSING ---------------- #
-def detect_stutter(text):
-    stutters = []
-    if re.search(r'\b(\w+)\s+\1\b', text.lower()):
-        stutters.append("Word Repetition")
-    if re.search(r'(.)\1{2,}', text.lower()):
-        stutters.append("Prolongation")
-    if re.search(r'\b(um+|uh+|like)\b', text.lower()):
-        stutters.append("Interjection")
-    return stutters if stutters else ["None"]
-
-def calculate_fluency(text, stutters):
-    words = text.split()
-    total_words = len(words) if len(words) > 0 else 1
-    stutter_penalty = len(stutters) if "None" not in stutters else 0
-    fluency_score = max(0, 1 - (stutter_penalty / total_words))
-    return round(fluency_score, 2)
-
-
-@app.route('/api/process-speech', methods=['POST'])
+# ---------------- Process Speech ----------------
+@app.route("/api/process-speech", methods=["POST"])
 @token_required
 def process_speech():
     data = request.get_json()
-    speech = data.get('speech', '').strip()
+    speech = data.get("speech", "")
 
-    if not speech:
-        return jsonify({"error": "No speech provided"}), 400
-
-    stutters = detect_stutter(speech)
-    fluency_score = calculate_fluency(speech, stutters)
-
-    result1 = pipe(speech + " [MASK]")
-    top1_words = [i['token_str'].strip() for i in result1[:5] if i['token_str'].isalpha()]
-
+    # Dummy scoring logic (replace with your real functions)
+    stutters = ["Word Repetition"] if "I I I" in speech else []
+    fluency_score = 0.88
+    top1_words = []
     combinations = {}
-    for word1 in top1_words[:3]:
-        result2 = pipe(speech + " " + word1 + " [MASK]")
-        combinations[word1] = [j['token_str'].strip() for j in result2[:3] if j['token_str'].isalpha()]
 
-    return jsonify({
+    # ✅ Save to MongoDB
+    results_collection.insert_one({
+        "user_email": request.user,
         "speech": speech,
-        "user": request.user,
         "stutter_types": stutters,
         "fluency_score": fluency_score,
         "top1_words": top1_words,
-        "combinations": combinations
+        "combinations": combinations,
+        "timestamp": datetime.datetime.utcnow()
     })
 
+    return jsonify({
+        "speech": speech,
+        "stutter_types": stutters,
+        "fluency_score": fluency_score,
+        "top1_words": top1_words,
+        "combinations": combinations,
+        "user": request.user
+    })
 
-if __name__ == '__main__':
-    port = int(os.getenv("PORT", 5000))
-    app.run(debug=True, host="0.0.0.0", port=port)
+# ---------------- Get Results ----------------
+@app.route("/api/results", methods=["GET"])
+@token_required
+def get_results():
+    results = list(results_collection.find({"user_email": request.user}))
+    for r in results:
+        r["_id"] = str(r["_id"])  # convert ObjectId to string
+    return jsonify({"results": results})
+
+# ---------------- Run ----------------
+if __name__ == "__main__":
+    app.run(debug=True, host="0.0.0.0", port=5000)

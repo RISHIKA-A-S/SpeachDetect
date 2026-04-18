@@ -1,4 +1,3 @@
-/* Therapy.css */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 * {
@@ -16,36 +15,43 @@
   --highlight-color: #8b5cf6;
 }
 
-body {
+/* Full screen base */
+html, body {
+  height: 100%;
+  width: 100%;
   font-family: 'Inter', sans-serif;
   background-color: var(--bg-color);
   color: var(--text-color);
 }
 
+/* Logo styling (aligned with Home) */
+.logo {
+  width: 350px;
+  height: auto;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+.logo:hover {
+  transform: scale(1.2) rotate(10deg);
+  opacity: 0.8;
+}
+
+/* Therapy container */
 .Therapy-container {
   width: 100%;
-  max-width: 800px;
+  height: 100vh; /* full viewport height */
   margin: 0 auto;
-  padding: 20px;
+  padding: 2rem;
   position: relative;
   overflow: hidden;
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
 }
 
-/* Wave canvas */
-.waves-canvas {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 150px;
-  pointer-events: none;
-  z-index: -1;
-}
-
-/* Header styles */
+/* Header section */
 .header {
   text-align: center;
   margin-bottom: 40px;
@@ -54,8 +60,11 @@ body {
 
 .app-title {
   font-size: 3rem;
-  font-weight: 700;
-  color: var(--primary-color);
+  font-weight: 800;
+  background: linear-gradient(90deg, #4f46e5, #7c3aed);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
   margin-bottom: 8px;
 }
 
@@ -65,21 +74,26 @@ body {
   font-weight: 400;
 }
 
-/* Main content */
+/* Main content centered */
 .main-content {
-  flex-grow: 1;
+  flex: 1;
   display: flex;
   flex-direction: column;
+  justify-content: center; /* vertical center */
+  align-items: center;     /* horizontal center */
+  width: 100%;
+  max-width: 900px;
   margin-bottom: 30px;
 }
 
-/* Text display */
+/* Text display box */
 .text-display {
   background-color: white;
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
   max-height: 60vh;
+  width: 100%;
 }
 
 .text-container {
@@ -97,17 +111,14 @@ body {
 .spoken-text {
   color: var(--primary-color);
   font-weight: 500;
-  /* Smooth transition for highlighting */
   transition: color 0.3s ease;
 }
 
 .unspoken-text {
   color: rgba(31, 41, 55, 0.8);
-  /* Smooth transition for highlighting */
   transition: color 0.3s ease;
 }
 
-/* Add visual cue for current position */
 .spoken-text::after {
   content: '';
   display: inline-block;
@@ -128,6 +139,10 @@ body {
 .controls {
   margin-top: auto;
   padding-top: 20px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .time-display {
@@ -223,15 +238,12 @@ body {
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .app-title {
-    font-size: 2.5rem;
-  }
-  
-  .app-subtitle {
-    font-size: 1rem;
-  }
-  
-  .text-container p {
-    font-size: 1rem;
-  }
+  .app-title { font-size: 2.5rem; }
+  .app-subtitle { font-size: 1rem; }
+  .text-container p { font-size: 1rem; }
+}
+
+@media (max-width: 480px) {
+  .app-title { font-size: 2rem; }
+  .app-subtitle { font-size: 0.9rem; }
 }

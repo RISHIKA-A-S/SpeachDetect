@@ -10,6 +10,7 @@ import {
 import Home from "./components/Home";
 import StutterHelp from "./components/StutterHelp";
 import Therapy from "./components/Therapy";
+import ResultsDashboard from "./components/ResultsDashboard";  // ✅ new import
 
 import Login from "./pages/Auth/Login";
 import SignUp from "./pages/Auth/SignUp";
@@ -31,7 +32,7 @@ const App = () => {
           <div className="logo2">
             <Link to="/">
               SPEAK<span>EASE</span>
-              <img src="/fslogov1.png" alt="logo" className="logo1" />
+              <img src="/Frontend/public/favicon.svg" alt="logo" className="logo1" />
             </Link>
           </div>
 
@@ -47,7 +48,7 @@ const App = () => {
               <>
                 <Link to="/stutter-help">Stutter Help</Link>
                 <Link to="/therapy">Therapy</Link>
-                
+                <Link to="/results">My Results</Link>   {/* ✅ new link */}
                 <button onClick={clearUser}>Logout</button>
               </>
             )}
@@ -70,6 +71,12 @@ const App = () => {
             <Route
               path="/therapy"
               element={isLoggedIn ? <Therapy /> : <Navigate to="/login" />}
+            />
+
+            {/* ✅ Results Dashboard route */}
+            <Route
+              path="/results"
+              element={isLoggedIn ? <ResultsDashboard /> : <Navigate to="/login" />}
             />
           </Routes>
         </main>
