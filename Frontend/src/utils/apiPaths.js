@@ -10,4 +10,9 @@ export const AUTH_PATHS = {
 
 export const API_PATHS = {
   AUTH: AUTH_PATHS,
+
+  SPEECH: {
+    PROCESS: "/process-speech",
+    RESULTS: "/results",
+  },
 };

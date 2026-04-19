@@ -8,10 +8,10 @@ import "../Auth/Auth.css";
 
 const Login = () => {
   const { updateUser } = useUser();
-  const navigate       = useNavigate();
+  const navigate = useNavigate();
 
-  const [form,    setForm]    = useState({ email: "", password: "" });
-  const [error,   setError]   = useState("");
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) =>
@@ -24,7 +24,17 @@ const Login = () => {
 
     try {
       const res = await axiosInstance.post(API_PATHS.AUTH.LOGIN, form);
-      updateUser(res.data);
+
+      // ✅ SAVE TOKEN (CRITICAL)
+      localStorage.setItem("token", res.data.token);
+
+      // ✅ Update user context
+      updateUser({
+        email: form.email,
+        isLoggedIn: true,
+      });
+
+      // ✅ Redirect to dashboard/home
       navigate("/");
     } catch (err) {
       setError(err.response?.data?.error || "Login failed. Please try again.");
@@ -48,8 +58,11 @@ const Login = () => {
 
         <div className="auth-hero-wave">
           <svg viewBox="0 0 1440 120" xmlns="http://www.w3.org/2000/svg">
-            <path fill="#ffffff" fillOpacity="1"
-              d="M0,64L48,58.7C96,53,192,43,288,48C384,53,480,75,576,80C672,85,768,75,864,64C960,53,1056,43,1152,48C1248,53,1344,75,1392,85.3L1440,96L1440,120L0,120Z"/>
+            <path
+              fill="#ffffff"
+              fillOpacity="1"
+              d="M0,64L48,58.7C96,53,192,43,288,48C384,53,480,75,576,80C672,85,768,75,864,64C960,53,1056,43,1152,48C1248,53,1344,75,1392,85.3L1440,96L1440,120L0,120Z"
+            />
           </svg>
         </div>
       </motion.section>
@@ -62,21 +75,20 @@ const Login = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.6 }}
         >
-          {/* Card header */}
+          {/* Header */}
           <div className="auth-card-header">
             <span className="auth-card-icon">🔐</span>
             <h2>Log In</h2>
             <p>Enter your credentials to access your account</p>
           </div>
 
-          {/* Card body */}
+          {/* Body */}
           <div className="auth-card-body">
             <form onSubmit={handleSubmit}>
 
               <div className="auth-field">
-                <label htmlFor="email">Email</label>
+                <label>Email</label>
                 <input
-                  id="email"
                   name="email"
                   type="email"
                   placeholder="you@example.com"
@@ -87,9 +99,8 @@ const Login = () => {
               </div>
 
               <div className="auth-field">
-                <label htmlFor="password">Password</label>
+                <label>Password</label>
                 <input
-                  id="password"
                   name="password"
                   type="password"
                   placeholder="••••••••"

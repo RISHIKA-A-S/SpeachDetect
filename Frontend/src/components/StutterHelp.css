@@ -361,3 +361,133 @@
   .sh-info-section            { padding: 3rem 1rem; }
   .sh-tips-section            { padding: 0 1rem 3rem; }
 }
+/* ── Add these to the bottom of your existing StutterHelp.css ── */
+
+.sh-auth-error {
+  width: 100%;
+  background: #fef2f2;
+  border-top: 2px solid #fecaca;
+  border-bottom: 2px solid #fecaca;
+  color: #dc2626;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0.9rem 2rem;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.sh-fluency-label {
+  font-size: 0.82rem;
+  color: #555;
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+.sh-no-stutter {
+  margin-top: 1.25rem;
+  padding: 0.85rem 1rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  color: #16a34a;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.sh-analysing {
+  font-size: 0.85rem;
+  color: #999;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+/* Multiple stutter type badges side by side */
+.sh-stutter-badge {
+  background: white;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(124,58,237,0.1);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.sh-stutter-badge .sh-stutter-description {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+/* ── Append these to the bottom of your StutterHelp.css ── */
+
+/* Status banner (loading / error / auth warning) */
+.sh-status-banner {
+  width: 100%;
+  padding: 0.85rem 2rem;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+.sh-status-banner.error {
+  background: #fef2f2;
+  border-top: 2px solid #fecaca;
+  border-bottom: 2px solid #fecaca;
+  color: #dc2626;
+}
+
+.sh-status-banner.info {
+  background: #eff6ff;
+  border-top: 2px solid #bfdbfe;
+  border-bottom: 2px solid #bfdbfe;
+  color: #1d4ed8;
+}
+
+/* Fluency label under bar */
+.sh-fluency-label {
+  font-size: 0.82rem;
+  color: #555;
+  margin-top: 0.6rem;
+  text-align: center;
+}
+
+/* No stutter / clean speech */
+.sh-no-stutter {
+  margin-top: 1.25rem;
+  padding: 0.85rem 1rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  color: #16a34a;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Analysing indicator */
+.sh-analysing {
+  font-size: 0.85rem;
+  color: #999;
+  margin-top: 1rem;
+  text-align: center;
+  font-style: italic;
+}
+
+/* Multiple stutter type badges side by side */
+.sh-stutter-badge {
+  background: white;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.1);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.sh-stutter-badge .sh-stutter-description {
+  width: 100%;
+  margin-top: 0.4rem;
+  margin-bottom: 0;
+}
