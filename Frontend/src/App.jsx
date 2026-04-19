@@ -7,10 +7,10 @@ import {
   Navigate,
 } from "react-router-dom";
 
+import ProfileDashboard from "./pages/Profile/ProfileDashboard";
 import Home from "./components/Home";
 import StutterHelp from "./components/StutterHelp";
 import Therapy from "./components/Therapy";
-import ResultsDashboard from "./components/ResultsDashboard";  // ✅ new import
 
 import Login from "./pages/Auth/Login";
 import SignUp from "./pages/Auth/SignUp";
@@ -20,49 +20,50 @@ import { useUser } from "./context/UserContext";
 import "./App.css";
 
 const App = () => {
-  const { user, clearUser } = useUser();
+  const { user, logout } = useUser();
   const isLoggedIn = !!user;
 
   return (
     <Router>
       <div className="app">
 
-        {/* NAVBAR */}
+        {/* ── NAVBAR ── */}
         <nav className="navbar">
           <div className="logo2">
-            <Link to="/">
-              SPEAK<span>EASE</span>
-              <img src="/Frontend/public/favicon.svg" alt="logo" className="logo1" />
-            </Link>
+            <Link to="/">SPEAK<span>EASE</span></Link>
           </div>
 
           <div className="nav-links">
-            <Link to="/">Home</Link>
+            <Link className="nav-link" to="/">Home</Link>
 
             {!isLoggedIn ? (
               <>
-                <Link to="/login">Login</Link>
-                <Link to="/signup">SignUp</Link>
+                <Link className="nav-link" to="/login">Login</Link>
+                <Link className="nav-link nav-link--cta" to="/signup">Sign Up</Link>
               </>
             ) : (
               <>
-                <Link to="/stutter-help">Stutter Help</Link>
-                <Link to="/therapy">Therapy</Link>
-                <Link to="/results">My Results</Link>   {/* ✅ new link */}
-                <button onClick={clearUser}>Logout</button>
+                <Link className="nav-link" to="/stutter-help">Stutter Help</Link>
+                <Link className="nav-link" to="/therapy">Therapy</Link>
+
+                {/* Both point to same component */}
+                <Link className="nav-link" to="/dashboard">Profile</Link>
+                
+
+                <button className="nav-logout" onClick={logout}>Logout</button>
               </>
             )}
           </div>
         </nav>
 
-        {/* ROUTES */}
+        {/* ── ROUTES ── */}
         <main className="main">
           <Routes>
             <Route path="/" element={<Home />} />
 
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
-            
+
             <Route
               path="/stutter-help"
               element={isLoggedIn ? <StutterHelp /> : <Navigate to="/login" />}
@@ -73,15 +74,23 @@ const App = () => {
               element={isLoggedIn ? <Therapy /> : <Navigate to="/login" />}
             />
 
-            {/* ✅ Results Dashboard route */}
+            {/* ✅ FIXED: using ProfileDashboard instead of undefined Dashboard */}
             <Route
-              path="/results"
-              element={isLoggedIn ? <ResultsDashboard /> : <Navigate to="/login" />}
+              path="/dashboard"
+              element={isLoggedIn ? <ProfileDashboard /> : <Navigate to="/login" />}
             />
+
+            <Route
+              path="/profile"
+              element={isLoggedIn ? <ProfileDashboard /> : <Navigate to="/login" />}
+            />
+
+            {/* Catch-all */}
+            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </main>
 
-        {/* FOOTER */}
+        {/* ── FOOTER ── */}
         <footer className="footer">
           <p>© {new Date().getFullYear()} SPEAKEASE</p>
         </footer>
