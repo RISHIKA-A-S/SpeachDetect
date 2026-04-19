@@ -199,7 +199,7 @@ Type: Word Repetition, Prolongation
 ## 👩‍💻 Author
 
 **Rishika A S**
-B.Tech IT Student | AI & ML Enthusiast
+B.Tech IT Student | Full Stack web Developer & AI & ML Enthusiast
 
 ---
 
