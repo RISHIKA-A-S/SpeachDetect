@@ -3,10 +3,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import axiosInstance from "../../utils/axiosInstance";
-import { API_PATHS } from "../../utils/apiPaths";
 import "./ProfileDashboard.css";
 
-// ── Helpers ────────────────────────────────────────────────────
+/* ── API paths (all under /api via axiosInstance baseURL) ───────────────────────────── */
+const API = {
+  PROFILE:            "/profile",           // GET + PUT
+  DASHBOARD_STATS:    "/dashboard/stats",
+  DASHBOARD_SESSIONS: "/dashboard/sessions",
+};
+
+/* ── Helpers ──────────────────────────────────────────────── */
 const getInitials = (user) => {
   if (!user) return "?";
   if (user.name)
@@ -24,10 +30,24 @@ const fluencyColor = (score) => {
   return "red";
 };
 
+const fluencyHex = (score) => {
+  if (score == null) return "#888";
+  if (score >= 0.7)  return "#16a34a";
+  if (score >= 0.4)  return "#d97706";
+  return "#dc2626";
+};
+
 const formatDate = (iso) => {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString("en-IN", {
     day: "numeric", month: "short", year: "numeric",
+  });
+};
+
+const formatTime = (iso) => {
+  if (!iso) return "";
+  return new Date(iso).toLocaleTimeString("en-IN", {
+    hour: "2-digit", minute: "2-digit",
   });
 };
 
@@ -44,35 +64,45 @@ const SESSION_META = {
 };
 const getSessionMeta = (type) => SESSION_META[type] ?? SESSION_META.default;
 
-// ── Component ──────────────────────────────────────────────────
+/* ── Component ────────────────────────────────────────────── */
 const ProfileDashboard = () => {
   const { user, updateUser, clearUser } = useUser();
   const navigate = useNavigate();
 
-  const [tab, setTab] = useState("profile"); // "profile" | "dashboard"
+  const [tab, setTab] = useState("profile");
 
-  // Profile state
+  /* Profile state */
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm]           = useState({ name: user?.name ?? "", email: user?.email ?? "" });
   const [saving, setSaving]       = useState(false);
   const [alert, setAlert]         = useState(null);
 
-  // Dashboard state
+  /* Dashboard state */
   const [stats,    setStats]    = useState(null);
   const [sessions, setSessions] = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [fetchErr, setFetchErr] = useState(null);
   const [filter,   setFilter]   = useState("all");
 
-  // Fetch dashboard data once on mount
+  /* Fetch profile + dashboard data on mount */
   const fetchData = useCallback(async () => {
     setLoading(true);
     setFetchErr(null);
     try {
-      const [statsRes, sessionsRes] = await Promise.allSettled([
-        axiosInstance.get(API_PATHS.DASHBOARD?.STATS    ?? "/dashboard/stats"),
-        axiosInstance.get(API_PATHS.DASHBOARD?.SESSIONS ?? "/dashboard/sessions"),
+      const [profileRes, statsRes, sessionsRes] = await Promise.allSettled([
+        axiosInstance.get(API.PROFILE),
+        axiosInstance.get(API.DASHBOARD_STATS),
+        axiosInstance.get(API.DASHBOARD_SESSIONS),
       ]);
+
+      /* Update user context with fresh profile data (name, createdAt) */
+      if (profileRes.status === "fulfilled") {
+        updateUser({ ...user, ...profileRes.value.data });
+        setForm({
+          name:  profileRes.value.data.name  ?? user?.name  ?? "",
+          email: profileRes.value.data.email ?? user?.email ?? "",
+        });
+      }
       if (statsRes.status    === "fulfilled") setStats(statsRes.value.data);
       if (sessionsRes.status === "fulfilled") setSessions(sessionsRes.value.data ?? []);
     } catch {
@@ -80,22 +110,35 @@ const ProfileDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Profile handlers
+  /* Sync form if user context changes externally */
+  useEffect(() => {
+    setForm({ name: user?.name ?? "", email: user?.email ?? "" });
+  }, [user]);
+
+  /* ── Profile handlers ── */
   const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
   const handleSave = async () => {
-    setSaving(true); setAlert(null);
+    if (!form.name.trim() || !form.email.trim()) {
+      setAlert({ type: "error", msg: "Name and email are required." });
+      return;
+    }
+    setSaving(true);
+    setAlert(null);
     try {
-      const res = await axiosInstance.put(API_PATHS.AUTH.PROFILE, form);
+      const res = await axiosInstance.put(API.PROFILE, form);
       updateUser({ ...user, ...res.data });
       setAlert({ type: "success", msg: "Profile updated successfully!" });
       setIsEditing(false);
     } catch (err) {
-      setAlert({ type: "error", msg: err.response?.data?.error || "Failed to update profile." });
+      setAlert({
+        type: "error",
+        msg: err.response?.data?.error || "Failed to update profile.",
+      });
     } finally {
       setSaving(false);
     }
@@ -103,32 +146,38 @@ const ProfileDashboard = () => {
 
   const handleCancel = () => {
     setForm({ name: user?.name ?? "", email: user?.email ?? "" });
-    setIsEditing(false); setAlert(null);
+    setIsEditing(false);
+    setAlert(null);
   };
 
   const handleLogout = () => { clearUser(); navigate("/"); };
 
-  // Derived dashboard values
-  const totalSessions = stats?.totalSessions ?? user?.sessionsCount ?? 0;
-  const totalReadings = stats?.totalReadings ?? user?.therapyCount  ?? 0;
-  const avgFluency    = stats?.avgFluency    ?? user?.avgFluency    ?? null;
-  const bestFluency   = stats?.bestFluency   ?? user?.bestFluency   ?? null;
-  const avgWpm        = stats?.avgWpm        ?? user?.avgWpm        ?? null;
-  const totalMinutes  = stats?.totalMinutes  ?? user?.totalMinutes  ?? 0;
-  const streak        = stats?.streak        ?? user?.streak        ?? 0;
+  /* ── Derived values ── */
+  const totalSessions    = stats?.totalSessions    ?? 0;
+  const totalReadings    = stats?.totalReadings    ?? 0;
+  const avgFluency       = stats?.avgFluency       ?? null;
+  const bestFluency      = stats?.bestFluency      ?? null;
+  const avgWpm           = stats?.avgWpm           ?? null;
+  const totalMinutes     = stats?.totalMinutes     ?? 0;
+  const streak           = stats?.streak           ?? 0;
   const stutterBreakdown = stats?.stutterBreakdown ?? [];
-  const filteredSessions = filter === "all" ? sessions : sessions.filter((s) => s.type === filter);
+
+  const filteredSessions =
+    filter === "all" ? sessions : sessions.filter((s) => s.type === filter);
 
   const displayName  = user?.name  || "—";
   const displayEmail = user?.email || "—";
   const joinedDate   = user?.createdAt
-    ? new Date(user.createdAt).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" })
+    ? new Date(user.createdAt).toLocaleDateString("en-IN", {
+        year: "numeric", month: "long", day: "numeric",
+      })
     : "—";
 
+  /* ── Render ── */
   return (
     <div className="profile-page">
 
-      {/* ── HERO ── */}
+      {/* HERO */}
       <motion.section
         className="pd-hero"
         initial={{ opacity: 0, y: 20 }}
@@ -138,22 +187,24 @@ const ProfileDashboard = () => {
         <div className="pd-avatar-wrap">
           <div className="pd-avatar">{getInitials(user)}</div>
         </div>
-        <h1>{displayName}</h1>
-        <p>{displayEmail}</p>
+        <h1 className="pd-hero-name">{displayName}</h1>
+        <p className="pd-hero-email">{displayEmail}</p>
 
         <div className="pd-hero-wave">
           <svg viewBox="0 0 1440 120" xmlns="http://www.w3.org/2000/svg">
-            <path fill="#ffffff" fillOpacity="1"
-              d="M0,64L48,58.7C96,53,192,43,288,48C384,53,480,75,576,80C672,85,768,75,864,64C960,53,1056,43,1152,48C1248,53,1344,75,1392,85.3L1440,96L1440,120L0,120Z"/>
+            <path
+              fill="#ffffff" fillOpacity="1"
+              d="M0,64L48,58.7C96,53,192,43,288,48C384,53,480,75,576,80C672,85,768,75,864,64C960,53,1056,43,1152,48C1248,53,1344,75,1392,85.3L1440,96L1440,120L0,120Z"
+            />
           </svg>
         </div>
       </motion.section>
 
-      {/* ── TAB BAR ── */}
+      {/* TAB BAR */}
       <div className="pd-tab-bar">
         <div className="pd-tabs">
           {[
-            { key: "profile",   label: "👤 Profile" },
+            { key: "profile",   label: "👤 Profile"   },
             { key: "dashboard", label: "📊 Dashboard" },
           ].map(({ key, label }) => (
             <button
@@ -162,16 +213,18 @@ const ProfileDashboard = () => {
               onClick={() => setTab(key)}
             >
               {label}
-              {tab === key && <motion.div className="pd-tab-indicator" layoutId="tab-indicator" />}
+              {tab === key && (
+                <motion.div className="pd-tab-indicator" layoutId="tab-indicator" />
+              )}
             </button>
           ))}
         </div>
       </div>
 
-      {/* ── TAB CONTENT ── */}
+      {/* TAB CONTENT */}
       <AnimatePresence mode="wait">
 
-        {/* ════════════ PROFILE TAB ════════════ */}
+        {/* ════════ PROFILE TAB ════════ */}
         {tab === "profile" && (
           <motion.div
             key="profile"
@@ -180,142 +233,137 @@ const ProfileDashboard = () => {
             exit={{ opacity: 0, y: -16 }}
             transition={{ duration: 0.35 }}
           >
-
-            {/* Account details */}
             <section className="pd-section">
               <motion.h2
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5 }}
-                viewport={{ once: true }}
+                initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }} viewport={{ once: true }}
               >
                 Account Details
               </motion.h2>
 
               <div className="pd-grid">
-
                 {/* Personal info card */}
                 <motion.div
                   className="pd-card"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                  viewport={{ once: true }}
+                  initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }} viewport={{ once: true }}
                 >
                   <div className="pd-card-head">
                     <span className="pd-card-head-icon">👤</span>
                     <h3>Personal Info</h3>
-                  </div>
-
-                  <div className="pd-field-row">
-                    <div className="pd-field">
-                      <label>Full Name</label>
-                      {isEditing ? (
-                        <input name="name" value={form.name} onChange={handleChange} placeholder="Your name" />
-                      ) : (
-                        <div className="pd-field-value">{displayName}</div>
-                      )}
-                    </div>
-                    <div className="pd-field">
-                      <label>Email Address</label>
-                      {isEditing ? (
-                        <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="you@example.com" />
-                      ) : (
-                        <div className="pd-field-value">{displayEmail}</div>
-                      )}
-                    </div>
-                    <div className="pd-field">
-                      <label>Member Since</label>
-                      <div className="pd-field-value">{joinedDate}</div>
-                    </div>
+                    {!isEditing && (
+                      <button
+                        className="pd-btn ghost pd-edit-btn"
+                        onClick={() => { setIsEditing(true); setAlert(null); }}
+                      >
+                        ✏️ Edit
+                      </button>
+                    )}
                   </div>
 
                   {alert && (
                     <div className={`pd-alert ${alert.type}`}>
-                      <span>{alert.type === "success" ? "✅" : "⚠️"}</span>
-                      {alert.msg}
+                      <span>{alert.type === "success" ? "✅" : "⚠️"}</span> {alert.msg}
                     </div>
                   )}
 
-                  <div className="pd-btn-row">
-                    {isEditing ? (
-                      <>
+                  {/* View mode */}
+                  {!isEditing && (
+                    <div className="pd-field-row">
+                      <div className="pd-field">
+                        <label>Full Name</label>
+                        <div className="pd-field-value">{displayName}</div>
+                      </div>
+                      <div className="pd-field">
+                        <label>Email Address</label>
+                        <div className="pd-field-value">{displayEmail}</div>
+                      </div>
+                      <div className="pd-field">
+                        <label>Member Since</label>
+                        <div className="pd-field-value">{joinedDate}</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Edit mode */}
+                  {isEditing && (
+                    <div className="pd-field-row">
+                      <div className="pd-field">
+                        <label>Full Name</label>
+                        <input
+                          className="pd-input" name="name"
+                          value={form.name} onChange={handleChange}
+                          placeholder="Your full name" autoFocus
+                        />
+                      </div>
+                      <div className="pd-field">
+                        <label>Email Address</label>
+                        <input
+                          className="pd-input" name="email" type="email"
+                          value={form.email} onChange={handleChange}
+                          placeholder="you@example.com"
+                        />
+                      </div>
+                      <div className="pd-field">
+                        <label>Member Since</label>
+                        <div className="pd-field-value">{joinedDate}</div>
+                      </div>
+                      <div className="pd-btn-row" style={{ gridColumn: "1 / -1" }}>
                         <button className="pd-btn primary" onClick={handleSave} disabled={saving}>
                           {saving ? "Saving…" : "💾 Save Changes"}
                         </button>
                         <button className="pd-btn ghost" onClick={handleCancel}>Cancel</button>
-                      </>
-                    ) : (
-                      <button className="pd-btn ghost" onClick={() => { setIsEditing(true); setAlert(null); }}>
-                        ✏️ Edit Profile
-                      </button>
-                    )}
-                  </div>
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
 
                 {/* Account card */}
                 <motion.div
                   className="pd-card purple"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1, duration: 0.5 }}
-                  viewport={{ once: true }}
+                  initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, duration: 0.5 }} viewport={{ once: true }}
                 >
                   <div className="pd-card-head">
                     <span className="pd-card-head-icon">⚙️</span>
                     <h3>Account</h3>
                   </div>
-
                   <div className="pd-field-row">
                     <div className="pd-field">
                       <label>Status</label>
-                      <div className="pd-field-value">
-                        <span style={{ color: "#16a34a", fontWeight: 700 }}>● Active</span>
-                      </div>
+                      <div className="pd-field-value" style={{ color: "#16a34a", fontWeight: 700 }}>● Active</div>
                     </div>
                     <div className="pd-field">
                       <label>Plan</label>
                       <div className="pd-field-value">Free</div>
                     </div>
                   </div>
-
                   <div className="pd-btn-row">
-                    <button className="pd-btn primary" onClick={() => setTab("dashboard")}>
-                      📊 View Dashboard
-                    </button>
-                    <button className="pd-btn danger" onClick={handleLogout}>
-                      🚪 Log Out
-                    </button>
+                    <button className="pd-btn primary" onClick={() => setTab("dashboard")}>📊 View Dashboard</button>
+                    <button className="pd-btn danger" onClick={handleLogout}>🚪 Log Out</button>
                   </div>
                 </motion.div>
-
               </div>
             </section>
 
-            {/* Journey milestones */}
+            {/* Milestones */}
             <section className="pd-section tint">
               <motion.h2
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5 }}
-                viewport={{ once: true }}
+                initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }} viewport={{ once: true }}
               >
                 Your Journey
               </motion.h2>
-
               <div className="pd-grid centered">
                 <motion.div
                   className="pd-card full"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                  viewport={{ once: true }}
+                  initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }} viewport={{ once: true }}
                 >
                   <div className="pd-card-head">
                     <span className="pd-card-head-icon">🏆</span>
                     <h3>Milestones</h3>
                   </div>
-
                   <div className="pd-tiles">
                     <div className="pd-tile">
                       <div className="pd-tile-icon">🎤</div>
@@ -338,14 +386,9 @@ const ProfileDashboard = () => {
                       <div className="pd-tile-label">Day Streak</div>
                     </div>
                   </div>
-
                   <div className="pd-btn-row" style={{ justifyContent: "center" }}>
-                    <button className="pd-btn primary" onClick={() => navigate("/stutter-help")}>
-                      🎤 Start Session
-                    </button>
-                    <button className="pd-btn ghost" onClick={() => navigate("/therapy")}>
-                      📖 Therapy Mode
-                    </button>
+                    <button className="pd-btn primary" onClick={() => navigate("/stutter-help")}>🎤 Start Session</button>
+                    <button className="pd-btn ghost"   onClick={() => navigate("/therapy")}>📖 Therapy Mode</button>
                   </div>
                 </motion.div>
               </div>
@@ -355,10 +398,8 @@ const ProfileDashboard = () => {
             <section className="pd-tips-section">
               <motion.div
                 className="pd-tips-inner"
-                initial={{ opacity: 0, scale: 0.97 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6 }}
-                viewport={{ once: true }}
+                initial={{ opacity: 0, scale: 0.97 }} whileInView={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6 }} viewport={{ once: true }}
               >
                 <h3>💡 Make the Most of SPEAKEASE</h3>
                 <ul>
@@ -369,11 +410,10 @@ const ProfileDashboard = () => {
                 </ul>
               </motion.div>
             </section>
-
           </motion.div>
         )}
 
-        {/* ════════════ DASHBOARD TAB ════════════ */}
+        {/* ════════ DASHBOARD TAB ════════ */}
         {tab === "dashboard" && (
           <motion.div
             key="dashboard"
@@ -389,14 +429,11 @@ const ProfileDashboard = () => {
               </section>
             ) : (
               <>
-
-                {/* Overview tiles */}
+                {/* Overview */}
                 <section className="pd-section">
                   <motion.h2
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5 }}
-                    viewport={{ once: true }}
+                    initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5 }} viewport={{ once: true }}
                   >
                     Overview
                   </motion.h2>
@@ -410,25 +447,22 @@ const ProfileDashboard = () => {
                   <div className="pd-grid centered">
                     <motion.div
                       className="pd-card full"
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5 }}
-                      viewport={{ once: true }}
+                      initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }} viewport={{ once: true }}
                     >
                       <div className="pd-card-head">
                         <span className="pd-card-head-icon">📊</span>
                         <h3>All-Time Stats</h3>
                       </div>
-
                       <div className="pd-tiles">
                         {[
-                          { icon: "🎤", value: totalSessions,      label: "Sessions" },
-                          { icon: "📖", value: totalReadings,      label: "Readings",    cls: "purple" },
-                          { icon: "✨", value: pct(avgFluency),    label: "Avg Fluency", cls: "green"  },
-                          { icon: "🏅", value: pct(bestFluency),   label: "Best Fluency" },
-                          { icon: "⚡", value: avgWpm ?? "—",      label: "Avg WPM",     cls: "purple" },
-                          { icon: "⏱️", value: totalMinutes,       label: "Minutes",     cls: "green"  },
-                          { icon: "🔥", value: streak,             label: "Day Streak"   },
+                          { icon: "🎤", value: totalSessions,   label: "Sessions"     },
+                          { icon: "📖", value: totalReadings,   label: "Readings",    cls: "purple" },
+                          { icon: "✨", value: pct(avgFluency), label: "Avg Fluency", cls: "green"  },
+                          { icon: "🏅", value: pct(bestFluency),label: "Best Fluency" },
+                          { icon: "⚡", value: avgWpm ?? "—",   label: "Avg WPM",     cls: "purple" },
+                          { icon: "⏱️", value: totalMinutes,    label: "Minutes",     cls: "green"  },
+                          { icon: "🔥", value: streak,          label: "Day Streak"   },
                         ].map(({ icon, value, label, cls }) => (
                           <div className={`pd-tile ${cls ?? ""}`} key={label}>
                             <div className="pd-tile-icon">{icon}</div>
@@ -444,29 +478,22 @@ const ProfileDashboard = () => {
                 {/* Fluency breakdown */}
                 <section className="pd-section tint">
                   <motion.h2
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5 }}
-                    viewport={{ once: true }}
+                    initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5 }} viewport={{ once: true }}
                   >
                     Fluency Breakdown
                   </motion.h2>
 
                   <div className="pd-grid">
-
-                    {/* Bars */}
                     <motion.div
                       className="pd-card"
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5 }}
-                      viewport={{ once: true }}
+                      initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }} viewport={{ once: true }}
                     >
                       <div className="pd-card-head">
                         <span className="pd-card-head-icon">📈</span>
                         <h3>Fluency Scores</h3>
                       </div>
-
                       {[
                         { label: "Average Fluency", value: avgFluency },
                         { label: "Best Fluency",    value: bestFluency },
@@ -475,7 +502,7 @@ const ProfileDashboard = () => {
                         <div className="pd-bar-wrap" key={label}>
                           <div className="pd-bar-top">
                             <span className="pd-bar-label">{label}</span>
-                            <span className="pd-bar-pct">{pct(value)}</span>
+                            <span className="pd-bar-pct" style={{ color: fluencyHex(value) }}>{pct(value)}</span>
                           </div>
                           <div className="pd-bar">
                             <div
@@ -487,19 +514,15 @@ const ProfileDashboard = () => {
                       ))}
                     </motion.div>
 
-                    {/* Stutter types */}
                     <motion.div
                       className="pd-card purple"
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1, duration: 0.5 }}
-                      viewport={{ once: true }}
+                      initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1, duration: 0.5 }} viewport={{ once: true }}
                     >
                       <div className="pd-card-head">
                         <span className="pd-card-head-icon">🧩</span>
                         <h3>Stutter Types Detected</h3>
                       </div>
-
                       {stutterBreakdown.length > 0 ? (
                         <div className="pd-badges">
                           {stutterBreakdown.map(({ type, count }) => (
@@ -517,24 +540,20 @@ const ProfileDashboard = () => {
                           No stutter data yet. Complete a Stutter Help session first.
                         </div>
                       )}
-
                       <div className="pd-btn-row" style={{ marginTop: "1.5rem" }}>
                         <button className="pd-btn primary" onClick={() => navigate("/stutter-help")}>
                           🎤 Start Stutter Help
                         </button>
                       </div>
                     </motion.div>
-
                   </div>
                 </section>
 
-                {/* Session history */}
+                {/* Session History */}
                 <section className="pd-section">
                   <motion.h2
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5 }}
-                    viewport={{ once: true }}
+                    initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5 }} viewport={{ once: true }}
                   >
                     Session History
                   </motion.h2>
@@ -542,20 +561,17 @@ const ProfileDashboard = () => {
                   <div className="pd-grid centered">
                     <motion.div
                       className="pd-card full"
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5 }}
-                      viewport={{ once: true }}
+                      initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }} viewport={{ once: true }}
                     >
                       <div className="pd-card-head">
                         <span className="pd-card-head-icon">🗂️</span>
                         <h3>Recent Sessions</h3>
-                        <div style={{ marginLeft: "auto", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                        <div className="pd-filter-row">
                           {["all", "stutter", "therapy"].map((f) => (
                             <button
                               key={f}
-                              className={`pd-btn ${filter === f ? "primary" : "ghost"}`}
-                              style={{ padding: "0.35rem 0.9rem", fontSize: "0.8rem" }}
+                              className={`pd-filter-btn ${filter === f ? "active" : ""}`}
                               onClick={() => setFilter(f)}
                             >
                               {f === "all" ? "All" : f === "stutter" ? "🎤 Stutter" : "📖 Therapy"}
@@ -567,7 +583,10 @@ const ProfileDashboard = () => {
                       {filteredSessions.length > 0 ? (
                         <div className="pd-session-list">
                           {filteredSessions.map((session, i) => {
-                            const meta = getSessionMeta(session.type);
+                            const meta        = getSessionMeta(session.type);
+                            const hasStutter  = session.stutterType && session.stutterType !== "None";
+                            const stutterList = hasStutter ? session.stutterType.split(", ") : [];
+
                             return (
                               <motion.div
                                 className="pd-session-item"
@@ -576,18 +595,52 @@ const ProfileDashboard = () => {
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: i * 0.04 }}
                               >
-                                <span className="pd-session-icon">{meta.icon}</span>
+                                {/* Icon */}
+                                <div
+                                  className="pd-session-icon-wrap"
+                                  style={{ background: `${meta.color}18` }}
+                                >
+                                  <span className="pd-session-icon">{meta.icon}</span>
+                                </div>
+
+                                {/* Info */}
                                 <div className="pd-session-info">
                                   <div className="pd-session-title">{meta.label}</div>
+
                                   <div className="pd-session-meta">
-                                    {formatDate(session.createdAt)}
-                                    {session.duration  != null && ` · ${formatDuration(session.duration)}`}
-                                    {session.wpm       != null && ` · ${session.wpm} WPM`}
-                                    {session.stutterType && ` · ${session.stutterType}`}
+                                    {session.createdAt && (
+                                      <>
+                                        <span className="pd-session-date">{formatDate(session.createdAt)}</span>
+                                        <span className="pd-session-sep">·</span>
+                                        <span className="pd-session-time">{formatTime(session.createdAt)}</span>
+                                      </>
+                                    )}
+                                    {session.duration != null && (
+                                      <><span className="pd-session-sep">·</span>{formatDuration(session.duration)}</>
+                                    )}
+                                    {session.wpm != null && (
+                                      <><span className="pd-session-sep">·</span>{session.wpm} WPM</>
+                                    )}
                                   </div>
+
+                                  {/* Stutter tags */}
+                                  {stutterList.length > 0 && (
+                                    <div className="pd-session-stutter-tags">
+                                      {stutterList.map((t) => (
+                                        <span key={t} className="pd-stutter-tag">{t}</span>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {session.stutterType === "None" && (
+                                    <span className="pd-no-stutter-tag">✅ No stutters detected</span>
+                                  )}
                                 </div>
-                                <div className="pd-session-score" style={{ color: meta.color }}>
-                                  {pct(session.fluencyScore)}
+
+                                {/* Fluency score */}
+                                <div className="pd-session-score" style={{ color: fluencyHex(session.fluencyScore) }}>
+                                  <div className="pd-session-score-pct">{pct(session.fluencyScore)}</div>
+                                  <div className="pd-session-score-label">fluency</div>
                                 </div>
                               </motion.div>
                             );
@@ -611,26 +664,22 @@ const ProfileDashboard = () => {
                 <section className="pd-tips-section">
                   <motion.div
                     className="pd-tips-inner"
-                    initial={{ opacity: 0, scale: 0.97 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.6 }}
-                    viewport={{ once: true }}
+                    initial={{ opacity: 0, scale: 0.97 }} whileInView={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.6 }} viewport={{ once: true }}
                   >
                     <h3>📈 Reading Your Results</h3>
                     <ul>
-                      <li>Fluency score reflects how smoothly you read relative to total passage length.</li>
+                      <li>Fluency score reflects how smoothly you speak relative to total words.</li>
                       <li>WPM tracks your reading speed — aim to improve it session by session.</li>
                       <li>Stutter types help identify your most common patterns to work on.</li>
                       <li>A daily streak keeps you consistent — even a short session counts.</li>
                     </ul>
                   </motion.div>
                 </section>
-
               </>
             )}
           </motion.div>
         )}
-
       </AnimatePresence>
     </div>
   );

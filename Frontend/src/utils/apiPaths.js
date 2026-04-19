@@ -2,17 +2,20 @@
 
 export const BASE_URL = "http://localhost:5000/api";
 
-export const AUTH_PATHS = {
-  LOGIN: "/login",     // ✅ matches Flask
-  SIGNUP: "/signup",   // ✅ matches Flask
-  PROFILE: "/profile", // optional, add later if backend supports it
-};
-
 export const API_PATHS = {
-  AUTH: AUTH_PATHS,
+  AUTH: {
+    LOGIN: "/login",
+    SIGNUP: "/signup",
+    PROFILE: "/profile",
+  },
 
   SPEECH: {
-    PROCESS: "/process-speech",
-    RESULTS: "/results",
+    PROCESS: "/process-speech",  // used in StutterHelp.jsx
+    RESULTS: "/results",         // used if you want raw DB results
   },
+
+  DASHBOARD: {
+    STATS: "/dashboard/stats",
+    SESSIONS: "/dashboard/sessions", // ✅ used in ProfileDashboard
+  }
 };
