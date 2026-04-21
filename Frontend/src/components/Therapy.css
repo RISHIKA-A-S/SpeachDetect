@@ -636,3 +636,259 @@
   .th-tips-section     { padding: 0 1rem 3rem; }
   .th-stats-section    { padding: 3rem 1rem; }
 }
+/* ─── Therapy.css additions ──────────────────────────────────
+   Add these rules to your existing Therapy.css file.
+   They handle: passage selection grid, per-word highlighting,
+   passage header / back button, mini passage switcher.
+─────────────────────────────────────────────────────────────── */
+
+/* ── Passage selection grid ── */
+.th-passage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.th-passage-card {
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: box-shadow 0.2s, border-color 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.th-passage-card:hover {
+  border-color: #7c3aed;
+  box-shadow: 0 8px 32px rgba(124, 58, 237, 0.12);
+}
+
+.th-passage-emoji {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.th-passage-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.th-passage-level {
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1.5px solid;
+  border-radius: 20px;
+  padding: 2px 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.th-passage-topic {
+  font-size: 0.76rem;
+  color: #64748b;
+  background: #f1f5f9;
+  border-radius: 20px;
+  padding: 2px 10px;
+}
+
+.th-passage-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.th-passage-preview {
+  font-size: 0.85rem;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0;
+  flex: 1;
+}
+
+.th-passage-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.4rem;
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
+
+.th-passage-start-btn {
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.th-passage-start-btn:hover { opacity: 0.85; }
+
+/* ── Passage header (reader screen) ── */
+.th-passage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+.th-back-btn {
+  background: none;
+  border: none;
+  color: #7c3aed;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0 0 0.5rem;
+  display: block;
+}
+
+.th-back-btn:hover { text-decoration: underline; }
+
+.th-passage-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.4rem;
+}
+
+.th-word-count-badge {
+  font-size: 0.76rem;
+  color: #64748b;
+  background: #f1f5f9;
+  border-radius: 20px;
+  padding: 2px 10px;
+}
+
+.th-reset-btn {
+  background: #f1f5f9;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.th-reset-btn:hover { background: #e2e8f0; }
+
+.th-complete-badge {
+  margin-left: auto;
+  background: #dcfce7;
+  color: #16a34a;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 3px 12px;
+}
+
+/* ── Per-word text rendering ── */
+.th-passage-text {
+  font-size: 1.1rem;
+  line-height: 1.85;
+  color: #334155;
+  margin: 0;
+}
+
+.th-word {
+  display: inline;
+  border-radius: 3px;
+  transition: background 0.12s, color 0.12s;
+  padding: 1px 2px;
+}
+
+/* Already spoken words — muted */
+.th-word.spoken {
+  color: #94a3b8;
+}
+
+/* Currently highlighted word — prominent */
+.th-word.current {
+  background: #7c3aed;
+  color: #ffffff;
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35);
+  animation: th-word-pulse 0.35s ease;
+}
+
+@keyframes th-word-pulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+/* Future words — full opacity */
+.th-word.future {
+  color: #1e293b;
+}
+
+/* ── Mini passage switcher (bottom of reader screen) ── */
+.th-passage-grid.mini {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.th-passage-card.mini {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.th-passage-card.mini .th-passage-emoji {
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+
+/* ── Dashboard passage breakdown ── */
+.pd-passage-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.pd-passage-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  gap: 1rem;
+}
+
+.pd-passage-row-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.pd-passage-row-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.pd-passage-row-meta {
+  font-size: 0.76rem;
+  color: #64748b;
+}
