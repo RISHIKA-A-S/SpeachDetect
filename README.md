@@ -174,33 +174,6 @@ breathe
 
 ---
 
-## 📁 Project Structure
-
-```
-SpeechDetect/
-│
-├── backend/
-│   ├── app.py
-│   ├── detect.py
-│   ├── predict.py
-│   ├── models/
-│   ├── features/
-│   ├── therapy/
-│   ├── utils/
-│   └── uploads/
-│
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   └── package.json
-│
-├── dataset/
-├── README.md
-└── requirements.txt
-```
-
----
-
 ## ⚙️ Installation
 
 ### Clone Repository
