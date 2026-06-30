@@ -1,0 +1,408 @@
+/* ─────────────────────────────────────────
+   SpeakEase — global styles
+   Drop this file and import it in main.jsx:
+     import './speakease.css'
+   Then add the className annotations below
+   to your existing JSX (see comments).
+───────────────────────────────────────── */
+
+/* ── Reset & base ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #f0f0f8;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #1a1a2e;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Root app shell ─────────────────────────
+   className="app" on your outermost <div>
+─────────────────────────────────────────── */
+.app {
+  min-height: 100vh;
+  background: #f0f0f8;
+}
+
+/* ── Hero section ───────────────────────────
+   Wrap <h1> + <p> in <div className="app-hero">
+─────────────────────────────────────────── */
+.app-hero {
+  background: linear-gradient(160deg, #eeeeff 0%, #e8e6ff 40%, #dde8ff 100%);
+  padding: 5rem 2rem 6rem;
+  text-align: center;
+  position: relative;
+}
+
+.app-hero::after {
+  content: '';
+  display: block;
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 48px;
+  background: #f0f0f8;
+  clip-path: ellipse(55% 100% at 50% 100%);
+}
+
+.app-hero h1 {
+  font-size: 2.6rem;
+  font-weight: 700;
+  color: #3730a3;
+  letter-spacing: -0.5px;
+  margin-bottom: 0.75rem;
+}
+
+.app-hero p {
+  font-size: 1rem;
+  color: #6366a8;
+  max-width: 340px;
+  margin: 0 auto 2rem;
+  line-height: 1.6;
+}
+
+/* ── Content sections ───────────────────────
+   className="section" on each content block
+─────────────────────────────────────────── */
+.section {
+  padding: 3rem 1.5rem;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  text-align: center;
+  margin-bottom: 1.75rem;
+}
+
+/* ── Live visualizer card ───────────────────
+   className="recorder-wrap" on AudioRecorder's wrapper
+─────────────────────────────────────────── */
+.recorder-wrap {
+  background: #fff;
+  border: 1px solid #e0e0f0;
+  border-radius: 16px;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(99, 102, 200, 0.07);
+}
+
+/* ── Record button ──────────────────────────
+   className="btn-record" on the record <button>
+─────────────────────────────────────────── */
+.btn-record {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #4338ca;
+  color: #fff;
+  border: none;
+  border-radius: 24px;
+  padding: 0.7rem 1.75rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  box-shadow: 0 4px 14px rgba(67, 56, 202, 0.3);
+}
+
+.btn-record:hover {
+  background: #3730a3;
+  transform: translateY(-1px);
+}
+
+.btn-record:active {
+  transform: scale(0.97);
+}
+
+/* ── Browse file link ───────────────────────
+   className="browse-link" on the <a> tag
+─────────────────────────────────────────── */
+.browse-link {
+  color: #6366f1;
+  font-size: 0.875rem;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.browse-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Transcript textarea ────────────────────
+   className="transcript-area" on <textarea>
+─────────────────────────────────────────── */
+.transcript-area {
+  width: 100%;
+  border: 1px solid #d4d4f0;
+  border-radius: 12px;
+  padding: 0.875rem 1rem;
+  font-size: 0.9375rem;
+  color: #1a1a2e;
+  background: #fff;
+  resize: vertical;
+  line-height: 1.6;
+  margin: 1.25rem 0;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.transcript-area:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+.transcript-area::placeholder {
+  color: #a5a5c0;
+}
+
+/* ── Next-word suggestion bar ───────────────
+   className="next-word-bar" on NextWordBar wrapper
+   className="word-chip" on each suggestion button
+─────────────────────────────────────────── */
+.next-word-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.word-chip {
+  background: #eef0ff;
+  color: #4338ca;
+  border: none;
+  border-radius: 20px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.word-chip:hover {
+  background: #dde0ff;
+  transform: translateY(-1px);
+}
+
+/* ── Card grid ──────────────────────────────
+   className="cards-grid" on two-column layouts
+   className="card" on each panel
+─────────────────────────────────────────── */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e4e4f6;
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+}
+
+.card-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6366a8;
+  margin-bottom: 0.5rem;
+}
+
+.card-body {
+  font-size: 0.9375rem;
+  color: #3730a3;
+  font-weight: 500;
+}
+
+.card-body p,
+.card > p {
+  color: #444460;
+  line-height: 1.6;
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+/* ── SFI Gauge card ─────────────────────────
+   className="gauge-card" on SFIGauge wrapper
+─────────────────────────────────────────── */
+.gauge-card {
+  background: #fff;
+  border: 1px solid #e4e4f6;
+  border-radius: 16px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.gauge-val {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #4338ca;
+  line-height: 1;
+  margin: 0.5rem 0 0.25rem;
+}
+
+.gauge-severity {
+  font-size: 0.875rem;
+  color: #6366a8;
+  margin-top: 0.4rem;
+}
+
+.pipeline-status {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin: 20px 0;
+}
+
+.pipeline-status div {
+  background: #e8f5e9;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.sfi-components {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sfi-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f5f5f5;
+}
+
+.summary-card {
+  margin-top: 20px;
+}
+
+.summary-card p {
+  margin: 10px 0;
+}
+
+/* ── Therapy card ───────────────────────────
+   className="therapy-card" on TherapyCard wrapper
+─────────────────────────────────────────── */
+.therapy-card {
+  background: linear-gradient(135deg, #eef0ff 0%, #f4eeff 100%);
+  border: 1px solid #d4d4f6;
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+
+.therapy-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #7c3aed;
+  margin-bottom: 0.75rem;
+}
+
+.therapy-card p {
+  color: #3730a3;
+  line-height: 1.7;
+  font-size: 0.9375rem;
+}
+
+/* ── Loading state ──────────────────────────
+   className="loading-bar" on {loading && <p>}
+─────────────────────────────────────────── */
+.loading-bar {
+  text-align: center;
+  color: #6366a8;
+  font-size: 0.9rem;
+  padding: 0.75rem;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* ── How it works grid ──────────────────────
+   className="how-grid" on the four-item grid
+   className="how-item" on each feature tile
+─────────────────────────────────────────── */
+.how-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.how-item {
+  background: #fff;
+  border: 1px solid #e4e4f6;
+  border-radius: 16px;
+  padding: 1.25rem 1rem;
+  text-align: center;
+}
+
+.how-icon {
+  font-size: 1.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.how-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #3730a3;
+  margin-bottom: 0.3rem;
+}
+
+.how-desc {
+  font-size: 0.78rem;
+  color: #6366a8;
+  line-height: 1.5;
+}
+
+/* ── Tips list ──────────────────────────────
+   className="tips-list" on <ul>
+─────────────────────────────────────────── */
+.tips-list {
+  list-style: none;
+  padding: 0;
+}
+
+.tips-list li {
+  font-size: 0.875rem;
+  color: #444460;
+  line-height: 1.6;
+  padding: 0.4rem 0 0.4rem 1.5rem;
+  position: relative;
+  border-bottom: 1px solid #f0f0f8;
+}
+
+.tips-list li::before {
+  content: '›';
+  position: absolute;
+  left: 0;
+  color: #6366f1;
+  font-weight: 700;
+  font-size: 1.1rem;
+  line-height: 1.4;
+}
+
+/* ── Responsive tweaks ── */
+@media (max-width: 480px) {
+  .app-hero h1 { font-size: 2rem; }
+  .section { padding: 2rem 1rem; }
+  .cards-grid { grid-template-columns: 1fr; }
+  .how-grid { grid-template-columns: 1fr 1fr; }
+}
