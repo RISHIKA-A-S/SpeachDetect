@@ -226,20 +226,6 @@ http://localhost:5173
 
 ---
 
-## 📷 Screenshots
-
-> Add screenshots of:
-
-- Home Page
-- Detection Dashboard
-- Therapy Recommendation
-- Analysis Summary
-- SFI Components
-- Transcript Correction
-- Next Word Suggestions
-
----
-
 ## 🔮 Future Work
 
 - Fine-tune Wav2Vec2 on larger speech datasets
@@ -251,11 +237,6 @@ http://localhost:5173
 - Therapist dashboard
 - User authentication
 
----
-
-## 📚 Citation
-
-If you use this work in your research, please cite the corresponding publication (when available).
 
 ---
 
