@@ -1,216 +1,303 @@
-# 🎤 SpeakEase – AI-Powered Stutter Detection & Fluency Enhancement System
+# 🎙️ AI-Based Stuttering Detection and Speech Therapy Assistance System
 
-## 📌 Overview
+An intelligent deep learning-based speech analysis system that automatically detects stuttering, assesses speech fluency, and provides personalized therapy recommendations through an interactive web application.
 
-**SpeakEase** is a full-stack AI-powered web application designed to detect stuttering patterns and improve speech fluency in real time. It captures live speech, analyzes it using machine learning, and provides intelligent suggestions along with performance tracking through a personalized dashboard.
+Built using **Wav2Vec2**, **BiLSTM**, **Flask**, and **React**, the system goes beyond traditional speech classification by integrating fluency assessment, transcript correction, and speech assistance features.
 
 ---
 
 ## 🚀 Features
 
-### 🎙️ Real-Time Speech Processing
-
-* Captures live audio using Web Speech API
-* Converts speech to text instantly
-
-### 🧠 AI-Based Stutter Detection
-
-Detects multiple stutter types:
-
-* Word Repetition
-* Sound Repetition
-* Prolongation
-* Interjection
-* Block
-
-### 💡 Smart Suggestions (BERT)
-
-* Predicts next words using NLP models
-* Helps users continue speech smoothly
-
-### 📊 Fluency Scoring
-
-* Calculates fluency percentage
-* Visual feedback with color indicators
-
-### 📈 Dashboard Analytics
-
-* Total sessions
-* Average & best fluency
-* Words per minute (WPM)
-* Stutter type breakdown
-* Daily streak tracking
-
-### 🗂️ Session History
-
-* Stores all sessions with timestamps
-* Displays detailed performance metrics
-
-### 🔐 Authentication
-
-* JWT-based login & signup
-* Secure user data handling
-
-### 🎨 Interactive UI
-
-* Audio visualizer
-* Smooth animations using Framer Motion
+- 🎤 Live microphone recording
+- 📁 Audio file upload
+- 📝 Automatic speech transcription
+- 🧠 Multi-class stuttering detection
+- 📊 Confidence score prediction
+- 📈 Stuttering Fluency Index (SFI) calculation
+- 💬 Personalized therapy recommendations
+- ✍️ Transcript disfluency correction
+- 💡 Context-aware next-word suggestions
+- 📱 Interactive React dashboard
+- ⚡ Real-time speech analysis
 
 ---
 
-## 🛠️ Tech Stack
+## 🏗️ System Workflow
+
+```
+Speech Input
+      │
+      ▼
+Audio Preprocessing
+      │
+      ▼
+Wav2Vec2 Feature Extraction
+      │
+      ▼
+BiLSTM Classification
+      │
+      ├── Stutter Type
+      ├── Confidence Score
+      ├── Fluency Index (SFI)
+      ├── Therapy Recommendation
+      ├── Transcript Correction
+      └── Next Word Suggestion
+```
+
+---
+
+## 🧠 Model Architecture
+
+- **Feature Extractor:** Wav2Vec2 Base
+- **Classifier:** Bidirectional LSTM (BiLSTM)
+- **Optimizer:** AdamW
+- **Loss Function:** CrossEntropy Loss
+- **Framework:** PyTorch
+
+---
+
+## 📂 Dataset
+
+- **Dataset:** SEP-28k
+- Timestamp-based speech annotations
+- Multiple stuttering disfluency categories
+- Audio resampled to **16 kHz** before feature extraction
+
+---
+
+## 🎯 Supported Speech Classes
+
+- Normal
+- Block
+- Sound Repetition
+- Word Repetition
+- Prolongation
+- Interjection
+
+---
+
+## 📊 Performance
+
+| Metric | Score |
+|---------|-------|
+| Validation Accuracy | **80.25%** |
+| Precision | **84.60%** |
+| Recall | **92.24%** |
+| F1-Score | **88.25%** |
+
+---
+
+## 📈 Stuttering Fluency Index (SFI)
+
+The application computes a quantitative fluency score using:
+
+- Stutter Rate (SR)
+- Stutter Frequency (SF)
+- Prolongation Duration (PD)
+- Phrase Accuracy (PA)
+
+The final SFI provides an overall assessment of speech fluency.
+
+---
+
+## 💬 Therapy Recommendation
+
+Based on the detected stuttering type, the system recommends evidence-based speech exercises such as:
+
+- Diaphragmatic Breathing
+- Easy Onset
+- Slow Speech
+- Controlled Pausing
+- Pacing Techniques
+
+---
+
+## ✍️ Transcript Correction
+
+Example:
+
+**Original**
+
+```
+I have w-want to-
+```
+
+**Corrected**
+
+```
+I have want to-
+```
+
+---
+
+## 💡 Next Word Suggestions
+
+Example predictions:
+
+```
+drink
+sleep
+eat
+enjoy
+breathe
+```
+
+---
+
+## 🖥️ Tech Stack
 
 ### Frontend
 
-* React.js
-* Framer Motion
-* Web Speech API
-* HTML5 Canvas
+- React.js
+- Bootstrap
+- Axios
 
 ### Backend
 
-* Flask (Python)
-* Transformers (BERT model)
-* Flask-JWT-Extended
+- Flask
+- Python
 
-### Database
+### AI & Deep Learning
 
-* MongoDB
+- PyTorch
+- Hugging Face Transformers
+- Wav2Vec2
+- BiLSTM
 
----
+### Audio Processing
 
-## 🏗️ System Architecture
-
-```
-User (Browser)
-   ↓
-React Frontend (Speech Capture + UI)
-   ↓
-Flask Backend API
-   ↓
-AI Model (BERT + Stutter Detection Logic)
-   ↓
-MongoDB Database
-   ↓
-Dashboard Analytics (Frontend)
-```
+- Librosa
+- SoundFile
+- FFmpeg
+- NumPy
+- Pandas
 
 ---
 
-## ⚙️ Installation & Setup
+## 📁 Project Structure
 
-### 🔹 1. Clone Repository
+```
+SpeechDetect/
+│
+├── backend/
+│   ├── app.py
+│   ├── detect.py
+│   ├── predict.py
+│   ├── models/
+│   ├── features/
+│   ├── therapy/
+│   ├── utils/
+│   └── uploads/
+│
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   └── package.json
+│
+├── dataset/
+├── README.md
+└── requirements.txt
+```
+
+---
+
+## ⚙️ Installation
+
+### Clone Repository
 
 ```bash
-git clone https://github.com/your-username/speakease.git
-cd speakease
+git clone https://github.com/yourusername/SpeechDetect.git
+
+cd SpeechDetect
 ```
 
----
-
-### 🔹 2. Backend Setup
+### Backend
 
 ```bash
 cd backend
+
+python -m venv venv
+```
+
+Activate the virtual environment.
+
+Install dependencies:
+
+```bash
 pip install -r requirements.txt
+```
+
+Start the Flask server:
+
+```bash
 python app.py
 ```
 
-Create a `.env` file:
-
-```
-MONGO_URI=your_mongodb_connection
-JWT_SECRET_KEY=your_secret_key
-```
-
 ---
 
-### 🔹 3. Frontend Setup
+### Frontend
 
 ```bash
 cd frontend
+
 npm install
+
 npm run dev
 ```
 
-Create `.env`:
+Open:
 
 ```
-VITE_API_URL=http://localhost:5000
-```
-
----
-
-## 🔌 API Endpoints
-
-| Method | Endpoint                | Description         |
-| ------ | ----------------------- | ------------------- |
-| POST   | /api/login              | User login          |
-| POST   | /api/signup             | User registration   |
-| GET    | /api/profile            | Get user profile    |
-| PUT    | /api/profile            | Update profile      |
-| POST   | /api/process-speech     | Analyze speech      |
-| GET    | /api/dashboard/stats    | Get analytics       |
-| GET    | /api/dashboard/sessions | Get session history |
-
----
-
-## 📊 Sample Output
-
-### Fluency Score
-
-```
-Fluency: 82% (Excellent)
-```
-
-### Detected Stutter
-
-```
-Type: Word Repetition, Prolongation
-```
-
-### Suggestions
-
-```
-["want", "to", "go", "home"]
+http://localhost:5173
 ```
 
 ---
 
-## 🎯 Use Cases
+## 📷 Screenshots
 
-* Speech therapy assistance
-* Public speaking practice
-* Communication skill improvement
-* Self-learning speech correction
+> Add screenshots of:
+
+- Home Page
+- Detection Dashboard
+- Therapy Recommendation
+- Analysis Summary
+- SFI Components
+- Transcript Correction
+- Next Word Suggestions
 
 ---
 
-## 🔮 Future Enhancements
+## 🔮 Future Work
 
-* 🌍 Multilingual support
-* 📱 Mobile app version
-* 🎧 Emotion detection from voice
-* 🤖 Personalized therapy plans
-* ⌚ Wearable device integration
+- Fine-tune Wav2Vec2 on larger speech datasets
+- Multilingual stuttering detection
+- Personalized therapy plans
+- Speech progress tracking
+- Mobile application
+- Cloud deployment
+- Therapist dashboard
+- User authentication
+
+---
+
+## 📚 Citation
+
+If you use this work in your research, please cite the corresponding publication (when available).
+
+---
+
+## 📄 License
+
+This project is intended for educational and research purposes.
 
 ---
 
 ## 👩‍💻 Author
 
 **Rishika A S**
-B.Tech IT Student | Full Stack web Developer & AI & ML Enthusiast
 
----
+B.Tech Information Technology
 
-## ⭐ Acknowledgements
+Artificial Intelligence | Machine Learning | Speech Processing | Full-Stack Development
 
-* HuggingFace Transformers
-* Web Speech API
-* Open-source community
-
----
-
-## 📜 License
-
-This project is for educational and research purposes.
+⭐ If you found this project useful, consider giving it a star!
